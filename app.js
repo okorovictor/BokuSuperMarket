@@ -4,10 +4,12 @@ dotenv.config(); // Load environment variables from .env file
 const connectDB = require("./Config/databaseConfig");
 const app = express();
 const productRoutes = require("./Routes/ProductRoute");
+const userRoutes = require("./Routes/UserRoute");
 
 connectDB(); // Connect to the MongoDB database
 
 app.use(express.json()); // Middleware to parse JSON request bodies
+app.use("/users", userRoutes); // use the user routes for any requests to /users
 
 app.use("/products", productRoutes); // use the product routes for any requests to /products
 
