@@ -7,11 +7,27 @@ const bcrypt = require("bcryptjs");
 exports.createUser = async (req, res) => {
   try {
     // request body
-    const { name, email, password, gender, phone, role, hasAdminAccess } = req.body;
+    const { name, email, password, gender, phone, role, hasAdminAccess } =
+      req.body;
 
     // check if all required fields are provided
     if (!name || !email || !password || !gender || !phone) {
-      return res.status(400).json({ message: "Please provide all required fields" });
+      return res
+        .status(400)
+        .json({ message: "Please provide all required fields" });
+    }
+
+    // validate strong password (min 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char)
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()_\-+=])[A-Za-z\d@$!%*?&#^()_\-+=]{8,}$/;
+    if (!passwordRegex.test(req.body.password)) {
+      return res.status(400).json({ message: "Password is not strong enough" });
+    }
+
+    // validate standard phone number (10 digits, can include country code)
+    const cleanPhone = req.body.phone.replace(/[\s\-()]/g, ""); // Remove non-digit characters
+    const phoneRegex = /^(?:\+?[1-9]\d{9,14}|0\d{9,10})$/;  // This regex allows for international formats and local formats with or without country code
+    if (!phoneRegex.test(cleanPhone)) {
+      return res.status(400).json({ message: "Invalid phone number" });
     }
 
     // Check if the email already exists in the database
@@ -21,7 +37,7 @@ exports.createUser = async (req, res) => {
     }
 
     // phone number validation
-    const existingPhone = await User.findOne({ phone: req.body.phone });
+    const existingPhone = await User.findOne({ phone: cleanPhone });
     if (existingPhone) {
       return res.status(400).json({ message: "Phone number already exists" });
     }
@@ -36,7 +52,7 @@ exports.createUser = async (req, res) => {
       email: req.body.email,
       password: hashedPassword,
       gender: req.body.gender,
-      phone: req.body.phone,
+      phone: cleanPhone,
       role: req.body.role || "salesperson", // Default to "salesperson" if not provided
       hasAdminAccess: req.body.hasAdminAccess || false, // Default to false if not provided
     });
@@ -75,9 +91,9 @@ exports.loginUser = async (req, res) => {
 
         // generate a token for the user (you can use JWT or any other method)
         // const token = generateToken(user); // Implement your token generation logic here
-        const token = jwt.sign({ id: user._id, email: user.email, name: user.name }, process.env.JWT_SECRET, { expiresIn: "1h" });
+        const token = jwt.sign({ id: user._id, email: user.email, name: user.name, role: user.role, hasAdminAccess: user.hasAdminAccess  }, process.env.JWT_SECRET, { expiresIn: "1h" });
 
-        res.status(200).json({ message: "Login successful", token });
+        res.status(200).json({ message: "Login successful", token, role: user.role });
     } catch (error) {
         res.status(500).json({ message: "Error logging in", error: error.message });
     }

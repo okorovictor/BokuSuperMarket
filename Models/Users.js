@@ -29,7 +29,7 @@ const UserSchema = new mongose.Schema(
     },
     role: {
       type: String,
-      enum: ["superadmin", "storekeeper", "salesperson"], // Define the possible roles for users
+      enum: ["superadmin", "storekeeper", "salesperson"], // Define the possible roles for the user
       default: "salesperson",
     },
   },
